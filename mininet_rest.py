@@ -27,6 +27,8 @@ class MininetRest(Bottle):
         self.route('/nodes/<node_name>/cmd', method='POST', callback=self.do_cmd)
         self.route('/nodes/<node_name>/<intf_name>', callback=self.get_intf)
         self.route('/nodes/<node_name>/<intf_name>', method='POST', callback=self.post_intf)
+        self.route('/switch/<node_name>/<status>', method='POST', callback=self.stop_node)
+        self.route('/link/<src_name>/<dst_name>/<status>', method='POST', callback=self.configLinkStatus)
         self.route('/hosts', method='GET', callback=self.get_hosts)
         self.route('/switches', method='GET', callback=self.get_switches)
         self.route('/links', method='GET', callback=self.get_links)
@@ -42,6 +44,9 @@ class MininetRest(Bottle):
         node = self.net[node_name]
         node.params.update(request.json['params'])
 
+    def stop_node(self, node_name,status):
+        node = self.net[node_name]
+        node.stop() if status=='stop' else node.start()
 
     def get_intf(self, node_name, intf_name):
         node = self.net[node_name]
@@ -58,6 +63,9 @@ class MininetRest(Bottle):
             intf_params = request.json['params']
             intf.config(**intf_params)
             intf.params.update(intf_params)
+            
+    def configLinkStatus(self,src_name,dst_name,status):
+        self.net.configLinkStatus(src_name,dst_name,status)
 
     def get_hosts(self):
         return {'hosts': [h.name for h in self.net.hosts]}
@@ -81,6 +89,7 @@ class MininetRest(Bottle):
                 for arg in rest]
         rest = ' '.join(rest)
         # Run cmd on node:
+        print(rest)
         node.sendCmd(rest)
         output = ''
         init_time = time.time()
